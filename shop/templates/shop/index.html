@@ -1,0 +1,21 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<h1 class="text-center mb-4">Каталог Аксесуарів</h1>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% for product in products %}
+    <div class="col">
+        <div class="card h-100 shadow-sm">
+            <img src="{{ product.thumbnail }}" class="card-img-top p-3" style="height: 250px; object-fit: contain;">
+            <div class="card-body">
+                <h5 class="card-title">{{ product.title }}</h5>
+                <h6 class="text-success">${{ product.price }}</h6>
+            </div>
+            <div class="card-footer bg-white border-top-0">
+                <a href="{% url 'add_to_cart' product.id %}" class="btn btn-outline-primary w-100">Додати в корзину</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
