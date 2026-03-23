@@ -3,17 +3,24 @@
 {% block content %}
 <h2 class="mb-4">Ваша Корзина 🛒</h2>
 
-{% if products %}
+{% if items %}
     <ul class="list-group mb-4">
-        {% for product in products %}
+        {% for item in items %}
         <li class="list-group-item d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <img src="{{ product.thumbnail }}" width="50" class="me-3">
-                <span>{{ product.title }}</span>
+            <div class="d-flex align-items-center" style="width: 40%;">
+                <img src="{{ item.product.thumbnail }}" width="50" class="me-3">
+                <span>{{ item.product.title }}</span>
             </div>
-            <div>
-                <span class="fw-bold me-4">${{ product.price }}</span>
-                <a href="{% url 'remove_from_cart' product.id %}" class="btn btn-sm btn-danger">Видалити</a>
+
+            <div class="d-flex align-items-center">
+                <a href="{% url 'update_quantity' item.id 'decrease' %}" class="btn btn-sm btn-outline-secondary px-2">-</a>
+                <span class="mx-3 fw-bold">{{ item.quantity }}</span>
+                <a href="{% url 'update_quantity' item.id 'increase' %}" class="btn btn-sm btn-outline-secondary px-2">+</a>
+            </div>
+
+            <div class="text-end" style="width: 30%;">
+                <span class="fw-bold me-4">${{ item.total_price }}</span>
+                <a href="{% url 'remove_from_cart' item.id %}" class="btn btn-sm btn-danger">Видалити</a>
             </div>
         </li>
         {% endfor %}
@@ -22,65 +29,15 @@
     <div class="alert alert-success d-flex justify-content-between">
         <h4 class="mb-0">Загальна сума:</h4>
         <h4 class="mb-0">${{ total_price }}</h4>
-    </div>from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
-from django.contrib.auth.decorators import login_required
-from .models import Product, Cart
+    </div>
 
-# --- АВТОРИЗАЦІЯ ---
-def register_view(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save() # Створює юзера, а сигнал автоматично створює йому Корзину і Профіль
-            login(request, user) # Одразу авторизуємо
-            return redirect('product_list')
-    else:
-        form = UserCreationForm()
-    return render(request, 'shop/register.html', {'form': form})
-
-def login_view(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            return redirect('product_list')
-    else:
-        form = AuthenticationForm()
-    return render(request, 'shop/login.html', {'form': form})
-
-def logout_view(request):
-    logout(request)
-    return redirect('login')
-
-# --- МАГАЗИН ТА КОРЗИНА ---
-@login_required(login_url='/login/')
-def product_list(request):
-    products = Product.objects.all()
-    return render(request, 'shop/index.html', {'products': products})
-
-@login_required(login_url='/login/')
-def cart_detail(request):
-    cart = request.user.cart
-    products = cart.products.all() # Беремо всі товари з корзини
-    total_price = sum(item.price for item in products) # Рахуємо загальну суму
-    return render(request, 'shop/cart.html', {'products': products, 'total_price': total_price})
-
-@login_required(login_url='/login/')
-def add_to_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    request.user.cart.products.add(product) # Додаємо товар у корзину
-    return redirect('cart_detail') # Переходимо в корзину
-
-@login_required(login_url='/login/')
-def remove_from_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    request.user.cart.products.remove(product) # Видаляємо товар з корзини
-    return redirect('cart_detail')
-    <button class="btn btn-success btn-lg w-100">Оформити замовлення</button>
+    <form action="{% url 'checkout' %}" method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success btn-lg w-100">Оформити замовлення</button>
+    </form>
 {% else %}
-    <div class="alert alert-info text-center">Ваша корзина порожня. <a href="{% url 'product_list' %}">Повернутися до товарів</a>.</div>
+    <div class="alert alert-info text-center">
+        Ваша корзина порожня. <a href="{% url 'product_list' %}">Повернутися до товарів</a>.
+    </div>
 {% endif %}
 {% endblock %}

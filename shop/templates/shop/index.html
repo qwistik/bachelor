@@ -12,7 +12,11 @@
                 <h6 class="text-success">${{ product.price }}</h6>
             </div>
             <div class="card-footer bg-white border-top-0">
-                <a href="{% url 'add_to_cart' product.id %}" class="btn btn-outline-primary w-100">Додати в корзину</a>
+                {% if product.id in cart_product_ids %}
+                    <button class="btn btn-secondary w-100" disabled>Вже в корзині</button>
+                {% else %}
+                    <a href="{% url 'add_to_cart' product.id %}" class="btn btn-outline-primary w-100">Додати в корзину</a>
+                {% endif %}
             </div>
         </div>
     </div>
