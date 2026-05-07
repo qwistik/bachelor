@@ -6,6 +6,9 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from .models import Product, Cart, CartItem, Order, OrderItem
 from .utils import smart_search
+from .forms import ProductForm
+
+from django.core.paginator import Paginator
 
 # --- АВТОРИЗАЦІЯ ---
 def register_view(request):
@@ -34,14 +37,24 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    in_cart = False
+    if request.user.is_authenticated:
+        in_cart = request.user.cart.items.filter(product=product).exists()
+
+    return render(request, 'shop/product_detail.html', {'product': product, 'in_cart': in_cart})
+
 # --- МАГАЗИН ТА КОРЗИНА ---
+@login_required(login_url='/login/')
 @login_required(login_url='/login/')
 def product_list(request):
     query = request.GET.get('q', '').strip()
-    use_smart = request.GET.get('use_smart') == 'on'  # Перевіряємо чекбокс
+    use_smart = request.GET.get('use_smart') == 'on'
     products = Product.objects.all()
 
-    # Виклик окремої функції пошуку
     if query:
         if use_smart:
             products = smart_search(query, products)
@@ -52,30 +65,40 @@ def product_list(request):
             else:
                 products = results
 
-    # Отримання стану корзини
+    # --- ПАГІНАЦІЯ (50 товарів на сторінку) ---
+    paginator = Paginator(products, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     cart_product_ids = []
     if request.user.is_authenticated:
         cart_product_ids = request.user.cart.items.values_list('product_id', flat=True)
 
     return render(request, 'shop/index.html', {
-        'products': products,
+        'products': page_obj, # Тепер передаємо лише 1 сторінку (50 товарів) замість усіх
         'cart_product_ids': cart_product_ids,
         'query': query,
         'use_smart': use_smart
     })
 
+
 @login_required(login_url='/login/')
 def add_to_cart(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-    # Шукаємо, чи є вже такий товар у корзині
     cart_item, created = CartItem.objects.get_or_create(cart=request.user.cart, product=product)
 
     if not created:
-        # Якщо товар вже був, просто збільшуємо кількість
         cart_item.quantity += 1
         cart_item.save()
 
-    return redirect(request.META.get('HTTP_REFERER', 'product_list'))
+    # Повертаємо користувача на те саме місце, де він був
+    referer = request.META.get('HTTP_REFERER')
+    if referer:
+        # Відрізаємо старий якір (якщо він є), щоб уникнути дублювання
+        base_url = referer.split('#')[0]
+        return redirect(f"{base_url}#product-{product_id}")
+
+    return redirect('product_list')
 
 @login_required(login_url='/login/')
 def cart_detail(request):
@@ -91,6 +114,34 @@ def remove_from_cart(request, item_id):
     item.delete()
     return redirect('cart_detail')
 
+@login_required
+def product_edit(request, product_id=None):
+    # Тільки для адмінів
+    if not request.user.is_staff:
+        return redirect('product_list')
+
+    if product_id:
+        product = get_object_or_404(Product, id=product_id)
+    else:
+        product = None
+
+    if request.method == 'POST':
+        form = ProductForm(request.POST, instance=product)
+        if form.is_valid():
+            form.save()
+            return redirect('product_list')
+    else:
+        form = ProductForm(instance=product)
+
+    return render(request, 'shop/product_form.html', {'form': form, 'product': product})
+
+@login_required
+def product_delete(request, product_id):
+    if not request.user.is_staff:
+        return redirect('product_list')
+    product = get_object_or_404(Product, id=product_id)
+    product.delete()
+    return redirect('product_list')
 
 @login_required(login_url='/login/')
 def update_quantity(request, item_id, action):

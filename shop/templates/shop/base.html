@@ -21,6 +21,14 @@
                                 {% endif %}
                             </a>
                         </li>
+                        {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link text-success fw-bold" href="{% url 'product_add' %}">➕ Додати товар</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-info" href="/admin/" target="_blank">⚙️ Панель Адміна</a>
+                            </li>
+                        {% endif %}
                         <li class="nav-item"><span class="nav-link text-white">Привіт, {{ user.username }}!</span></li>
                         <li class="nav-item"><a class="nav-link text-danger" href="{% url 'logout' %}">Вийти</a></li>
                     {% else %}

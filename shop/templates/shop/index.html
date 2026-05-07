@@ -8,13 +8,6 @@
                 <input type="text" name="q" class="form-control me-2" placeholder="Пошук аксесуарів..." value="{{ query|default:'' }}">
                 <button type="submit" class="btn btn-primary">Знайти</button>
             </div>
-            <div class="form-check form-switch mt-3">
-                <input class="form-check-input" type="checkbox" name="use_smart" id="smartSearch"
-                       {% if use_smart %}checked{% endif %}>
-                <label class="form-check-label" for="smartSearch">
-                    Увімкнути <strong>Smart Search</strong> (враховувати контекст та ціну)
-                </label>
-            </div>
         </form>
     </div>
 </div>
@@ -22,13 +15,23 @@
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for product in products %}
     <div class="col">
-        <div class="card h-100 shadow-sm">
-            <img src="{{ product.thumbnail }}" class="card-img-top p-3" style="height: 250px; object-fit: contain;">
+        <div class="card h-100 shadow-sm position-relative"> <img src="{{ product.thumbnail }}" class="card-img-top p-3" style="height: 250px; object-fit: contain;">
+
             <div class="card-body">
-                <h5 class="card-title">{{ product.title }}</h5>
-                <h6 class="text-success">${{ product.price }}</h6>
+                <h5 class="card-title">
+                    <a href="{% url 'product_detail' product.id %}" class="text-decoration-none text-dark stretched-link">
+                        {{ product.title }}
+                    </a>
+                </h5>
+
+                <h6 class="text-success fw-bold">${{ product.price }}</h6>
+
+                <p class="card-text text-muted mt-2" style="font-size: 0.9rem;">
+                    {{ product.description|truncatechars:80 }}
+                </p>
             </div>
-            <div class="card-footer bg-white border-top-0">
+
+            <div class="card-footer bg-white border-top-0" style="position: relative; z-index: 2;">
                 {% if product.id in cart_product_ids %}
                     <button class="btn btn-secondary w-100" disabled>Вже в корзині</button>
                 {% else %}
@@ -39,4 +42,36 @@
     </div>
     {% endfor %}
 </div>
+
+{% if products.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-5 mb-4">
+    <ul class="pagination justify-content-center">
+        {% if products.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ products.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if use_smart %}&use_smart=on{% endif %}">&laquo; Попередня</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo; Попередня</span></li>
+        {% endif %}
+
+        {% for num in products.paginator.page_range %}
+            {% if products.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if use_smart %}&use_smart=on{% endif %}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+
+        {% if products.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ products.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if use_smart %}&use_smart=on{% endif %}">Наступна &raquo;</a>
+            </li>
+        {% else %}
+            <li class="page-item disabled"><span class="page-link">Наступна &raquo;</span></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
 {% endblock %}

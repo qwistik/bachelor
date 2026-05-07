@@ -1,0 +1,22 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="card shadow p-4 mx-auto mt-4" style="max-width: 600px;">
+    <h2 class="mb-4 text-center">
+        {% if product %}Редагувати товар{% else %}Додати новий товар{% endif %}
+    </h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <div class="d-flex gap-3 mt-4">
+            <button type="submit" class="btn btn-success w-50">Зберегти товар</button>
+
+            <a href="{% if product %}{% url 'product_detail' product.id %}{% else %}{% url 'product_list' %}{% endif %}" class="btn btn-secondary w-50">
+                Скасувати
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="card shadow-sm mt-4">
+    <div class="row g-0">
+        <div class="col-md-5 d-flex align-items-center justify-content-center p-4 bg-white">
+            <img src="{{ product.thumbnail }}" class="img-fluid rounded-start" alt="{{ product.title }}" style="max-height: 400px; object-fit: contain;">
+        </div>
+        <div class="col-md-7">
+            <div class="card-body p-5">
+                <h2 class="card-title mb-3">{{ product.title }}</h2>
+                
+                {% if product.brand %}
+                    <span class="badge bg-secondary mb-3 fs-6">Бренд: {{ product.brand }}</span>
+                {% endif %}
+                
+                <h3 class="text-success fw-bold mb-4">${{ product.price }}</h3>
+                
+                <h5 class="fw-bold">Опис товару:</h5>
+                <p class="card-text text-muted fs-5" style="line-height: 1.6;">
+                    {{ product.description|default:"Опис для цього товару поки відсутній." }}
+                </p>
+                
+                <div class="mt-5">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-lg w-100">Увійдіть, щоб купити</a>
+                    {% elif in_cart %}
+                        <a href="{% url 'cart_detail' %}" class="btn btn-secondary btn-lg w-100">Вже у корзині (Перейти)</a>
+                    {% else %}
+                        <a href="{% url 'add_to_cart' product.id %}" class="btn btn-success btn-lg w-100">🛒 Додати в корзину</a>
+                    {% endif %}
+                </div>
+
+                {% if user.is_staff %}
+                    <div class="mt-4 p-3 border border-warning rounded bg-warning bg-opacity-10">
+                        <h6 class="text-warning-emphasis mb-3">⚙️ Керування товаром (Адмін)</h6>
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'product_edit' product.id %}" class="btn btn-warning w-50">Редагувати</a>
+                            <a href="{% url 'product_delete' product.id %}" class="btn btn-danger w-50" onclick="return confirm('Ви впевнені, що хочете назавжди видалити цей товар?');">Видалити</a>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{% url 'product_list' %}" class="btn btn-outline-secondary">← Повернутися до каталогу</a>
+</div>
+{% endblock %}
