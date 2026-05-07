@@ -2,7 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.db.models.functions import Lower
 from .models import Product, Cart, CartItem, Order, OrderItem
+from .utils import smart_search
 
 # --- АВТОРИЗАЦІЯ ---
 def register_view(request):
@@ -34,15 +37,31 @@ def logout_view(request):
 # --- МАГАЗИН ТА КОРЗИНА ---
 @login_required(login_url='/login/')
 def product_list(request):
+    query = request.GET.get('q', '').strip()
+    use_smart = request.GET.get('use_smart') == 'on'  # Перевіряємо чекбокс
     products = Product.objects.all()
 
-    # Замість .products використовуємо .items (related_name з моделі CartItem)
-    # І дістаємо саме product_id з кожного CartItem
-    cart_product_ids = request.user.cart.items.values_list('product_id', flat=True)
+    # Виклик окремої функції пошуку
+    if query:
+        if use_smart:
+            products = smart_search(query, products)
+        else:
+            results = products.filter(Q(title__icontains=query) | Q(brand__icontains=query))
+            if not results.exists():
+                products = smart_search(query, products)
+            else:
+                products = results
+
+    # Отримання стану корзини
+    cart_product_ids = []
+    if request.user.is_authenticated:
+        cart_product_ids = request.user.cart.items.values_list('product_id', flat=True)
 
     return render(request, 'shop/index.html', {
         'products': products,
-        'cart_product_ids': cart_product_ids
+        'cart_product_ids': cart_product_ids,
+        'query': query,
+        'use_smart': use_smart
     })
 
 @login_required(login_url='/login/')

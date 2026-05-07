@@ -1,6 +1,23 @@
 {% extends 'shop/base.html' %}
 
 {% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-md-8">
+        <form method="GET" action="{% url 'product_list' %}" class="card p-4 shadow-sm">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control me-2" placeholder="Пошук аксесуарів..." value="{{ query|default:'' }}">
+                <button type="submit" class="btn btn-primary">Знайти</button>
+            </div>
+            <div class="form-check form-switch mt-3">
+                <input class="form-check-input" type="checkbox" name="use_smart" id="smartSearch"
+                       {% if use_smart %}checked{% endif %}>
+                <label class="form-check-label" for="smartSearch">
+                    Увімкнути <strong>Smart Search</strong> (враховувати контекст та ціну)
+                </label>
+            </div>
+        </form>
+    </div>
+</div>
 <h1 class="text-center mb-4">Каталог Аксесуарів</h1>
 <div class="row row-cols-1 row-cols-md-3 g-4">
     {% for product in products %}
